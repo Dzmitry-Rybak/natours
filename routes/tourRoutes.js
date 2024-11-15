@@ -7,6 +7,9 @@ router
   .route('/top-5-cheap')
   .get(tourControllers.aliasTopTours, tourControllers.getAllTours);
 
+router.route('/tour-stats').get(tourControllers.getTourStats);
+router.route('/monthly-plan/:year').get(tourControllers.getMonthlyPlan);
+
 router
   .route('/') // '/' saying what we reference to out main route /api/v1/tours
   .get(tourControllers.getAllTours)
