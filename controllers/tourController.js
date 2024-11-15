@@ -1,8 +1,8 @@
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
+const AppError = require('../utils/appError');
 
 exports.aliasTopTours = async (req, res, next) => {
-  console.log('lol');
   req.query.limit = '5';
   req.query.sort = '-ratingsAverage,price';
   req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
@@ -10,7 +10,6 @@ exports.aliasTopTours = async (req, res, next) => {
 };
 
 exports.getAllTours = async (req, res) => {
-  console.log(req.query);
   try {
     // BUILD QUERY
     // // 1) Filtering
@@ -88,11 +87,11 @@ exports.getAllTours = async (req, res) => {
   }
 };
 
-exports.getTour = async (req, res) => {
+exports.getTour = async (req, res, next) => {
   try {
     const tour = await Tour.findById(req.params.id);
     // Tour.findOne({_id: req.param.id}) the same as findById
-    if (!tour) throw new Error('No user with this ID');
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -100,10 +99,7 @@ exports.getTour = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(404).json({
-      status: 'fail',
-      message: err,
-    });
+    return next(new AppError(404, 'No user with this ID'));
   }
 };
 
