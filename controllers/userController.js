@@ -1,18 +1,28 @@
 const fs = require('fs');
 
+const User = require('../models/userModel');
+
 const usersFileName = `${__dirname}/../dev-data/data/users.json`;
 const users = JSON.parse(fs.readFileSync(usersFileName, 'utf-8'));
 
-exports.getAllUsers = (req, res) => {
-  console.log(req.requestTime);
-  res.status(200).json({
-    status: 'success',
-    requestedAt: req.requestTime,
-    results: users.length,
-    data: {
-      users,
-    },
-  });
+exports.getAllUsers = async (req, res) => {
+  try {
+    const allUsers = await User.find();
+
+    res.status(200).json({
+      status: 'success',
+      requestedAt: req.requestTime,
+      results: allUsers.length,
+      data: {
+        allUsers,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'fail',
+      message: error,
+    });
+  }
 };
 
 exports.getUser = (req, res) => {

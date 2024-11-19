@@ -16,7 +16,7 @@ const sendErrorDev = (err, res) => {
 
 const sendErrorProd = (err, res) => {
   if (err.isOperational) {
-    res.status(err.statusCode).json({
+    return res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
     });
@@ -37,6 +37,7 @@ module.exports = (err, req, res, next) => {
     let error = { ...err };
     if (error.name === 'CastError') error = handleCastErrorDb(error);
 
-    sendErrorProd(error, res);
+    // put here err, not error, because, if we don't get into error.name === 'CastError', we don't have message property
+    sendErrorProd(err, res);
   }
 };

@@ -1,5 +1,6 @@
 const express = require('express');
 const tourControllers = require('../controllers/tourController');
+const authController = require('../controllers/authController');
 
 const router = express.Router();
 
@@ -12,12 +13,16 @@ router.route('/monthly-plan/:year').get(tourControllers.getMonthlyPlan);
 
 router
   .route('/') // '/' saying what we reference to out main route /api/v1/tours
-  .get(tourControllers.getAllTours)
+  .get(authController.protect, tourControllers.getAllTours)
   .post(tourControllers.createTour); // middleware chain, step by step from first to second middleware
 router
   .route('/:id') // '/:id' saying what we reference to out main route /api/v1/tours/:id
   .get(tourControllers.getTour)
   .patch(tourControllers.updateTour)
-  .delete(tourControllers.deleteTour);
+  .delete(
+    authController.protect,
+    authController.restrictTo('admin', 'lead-guide'),
+    tourControllers.deleteTour,
+  );
 
 module.exports = router;
