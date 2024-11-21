@@ -466,51 +466,5 @@
         "day": 5
       }
     ]
-  },
-  { "id": null, "name": "Test Tour", "duration": 10, "difficulty": "easy" },
-  { "id": 1, "name": "Test Tour", "duration": 10, "difficulty": "easy" },
-  { "id": 2, "name": "Test Tour2", "duration": 10, "difficulty": "easy" },
-  { "id": 3, "name": "Test Tour2", "duration": 10, "difficulty": "easy" },
-  {
-    "id": 4,
-    "name": "Test Tour2",
-    "duration": 10,
-    "difficulty": "easy",
-    "price": 500
-  },
-  {
-    "id": 5,
-    "name": "Test Tour2",
-    "duration": 10,
-    "difficulty": "easy",
-    "price": 500
-  },
-  {
-    "id": 6,
-    "name": "Test Tour2",
-    "duration": 10,
-    "difficulty": "easy",
-    "price": 500
-  },
-  {
-    "id": 7,
-    "name": "Test Tour2",
-    "duration": 10,
-    "difficulty": "easy",
-    "price": 500
-  },
-  {
-    "id": 8,
-    "name": "Test Tour2",
-    "duration": 10,
-    "difficulty": "easy",
-    "price": 500
-  },
-  {
-    "id": 9,
-    "name": "Test Tour2",
-    "duration": 10,
-    "difficulty": "easy",
-    "price": 500
   }
 ]

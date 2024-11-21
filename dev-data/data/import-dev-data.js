@@ -7,7 +7,7 @@ const Tour = require('../../models/tourModel');
 dotenv.config({ path: `./.env.development` }); // this command will read all variables from config file and set in into node.js env
 
 mongoose
-  .connect(process.env.DATABASE_LOCAL, {
+  .connect('mongodb://localhost:27017/natours', {
     useNewUrlParser: true,
     useCreateIndex: true,
     useFindAndModify: false,
@@ -17,9 +17,7 @@ mongoose
   });
 
 // Read JSON File
-const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/tours-simple.json`, 'utf-8'),
-);
+const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours.json`, 'utf-8'));
 // Import DATA into DataBase
 
 const importData = async () => {

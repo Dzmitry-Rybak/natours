@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const validator = require('validator');
+const User = require('./userModel');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -78,6 +79,33 @@ const tourSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    startLocation: {
+      // GeoJSON. Now there is not the same as secretTour, there type and coordinates are fields in object
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number], // array of numbers
+      address: String,
+      description: String,
+    },
+    // this is how to create embedded document
+    locations: [
+      // will create new document inside parent document
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point'],
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number,
+      },
+    ],
+    guides: Array,
   },
   {
     toJSON: { virtuals: true }, // each time data is output with json, we add this
@@ -90,47 +118,56 @@ tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });
 
-// // pre - middleware before an actual event
-// // DOCUMENT MIDDLEWARE: runs before .save() and .create()
-// tourSchema.pre('save', function (next) {
-//   // this function will be called before actual document
-//   // console.log(this); // in this case we reference to the Document that is being saved (body that we try to save in our database)
+// pre - middleware before an actual event
+// DOCUMENT MIDDLEWARE: runs before .save() and .create()
+tourSchema.pre('save', function (next) {
+  // this function will be called before actual document
+  // console.log(this); // in this case we reference to the Document that is being saved (body that we try to save in our database)
 
-//   this.slug = slugify(this.name, { lower: true });
-//   next();
-// });
+  this.slug = slugify(this.name, { lower: true });
+  next();
+});
 
-// tourSchema.pre('save', function (next) {
-//   console.log('Will save document...');
-//   next();
-// });
+// Embedding users with tours
+tourSchema.pre('save', async function (next) {
+  const guidesPromises = this.guides.map(async (id) => await User.findById(id)); // as we don't do .then() we don't await the result of this FindById query
 
-// // doc - act to saved document
-// tourSchema.post('save', function (doc, next) {
-//   console.log(doc);
-//   next();
-// });
+  this.guides = await Promise.all(guidesPromises); // so here we'r waiting all this promises
 
-// ////////////////////////////////
-// // QUERY MIDDLEWARE
-// // /^find/ - means all strings with find name (find, findOne ...)
-// tourSchema.pre(/^find/, function (next) {
-//   // this - query object with all query methods
-//   this.find({ secretTour: { $ne: true } });
+  next();
+});
 
-//   this.start = Date.now();
-//   console.log(this);
-//   next();
-// });
+tourSchema.pre('save', function (next) {
+  // console.log('Will save document...');
+  next();
+});
 
-// tourSchema.post(/^find/, function (docs, next) {
-//   console.log(`query took: ${Date.now() - this.start} milliseconds`);
-
-//   console.log(docs); // result of documentations
-//   next();
-// });
+// doc - act to saved document
+tourSchema.post('save', function (doc, next) {
+  // console.log(doc);
+  next();
+});
 
 ////////////////////////////////
+// QUERY MIDDLEWARE
+// /^find/ - means all strings with find name (find, findOne ...)
+tourSchema.pre(/^find/, function (next) {
+  // this - query object with all query methods
+  this.find({ secretTour: { $ne: true } });
+
+  this.start = Date.now();
+  // console.log(this);
+  next();
+});
+
+tourSchema.post(/^find/, function (docs, next) {
+  console.log(`query took: ${Date.now() - this.start} milliseconds`);
+
+  // console.log(docs); // result of documentations
+  next();
+});
+
+//////////////////////////////
 // AGGREGATION MIDDLEWARE
 tourSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });

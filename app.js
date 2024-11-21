@@ -1,20 +1,53 @@
 const express = require('express');
 const morgan = require('morgan');
-
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
 const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const AppError = require('./utils/appError');
 
 const app = express();
-// 1) MIDDLEWARES
+
+// 1) GLOBAL MIDDLEWARES
+// Set security HTTP headers:
+// We call this helmet inside use() because this function return middleware function
+app.use(helmet()); // protect app from vulnerabilities
+
+// Development logging:
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// middleware is just a function that modify an incoming data. Middle request and response
-app.use(express.json()); // JSON parsing middleware to your Express app.
+// Limit requests from same API
+const limiter = rateLimit({
+  max: 100, // allow 100 requests from the same IP
+  windowMs: 60 * 60 * 1000, // in 1 hour
+  message: 'Too many requests from tis IP, please try again in an hour!', // the message client will get if try more then 100 requests
+});
+app.use('/api', limiter); // apply this limiter only for /api/* routes
 
+// Body parser:
+// middleware is just a function that modify an incoming data. Middle request and response
+app.use(express.json()); // JSON parsing middleware to your Express app. Body parser - reading data from body into req.body
+
+// Data sanitization against NoSQL query injection | Hackers can use NoSQL query, example: email: {"$gt": ""} - it will true, so we can use this query and valid password to log in
+app.use(mongoSanitize()); // filter out all $ and . from request
+
+// Data sanitization against Cross Side Scripting  (XSS)
+app.use(xss()); // clean any user input from malicious html code | to avoid this - "name": "<div id=1>'some-hacker-text'</div>"
+
+// Prevent parameter pollution
+app.use(
+  hpp({
+    whitelist: ['duration'], // properties witch we allows to duplicate /tours?duration=4&duration=6 - it's OK
+  }),
+); // example - /tours?sort=duration&sort=price = will sorting only by price (the last one), without this hpp - we will get error
+
+// Serving static files
 app.use(express.static(`${__dirname}/public`));
 
 //creating own middleware. it is for each, and every single request!
@@ -44,7 +77,7 @@ app.use('/api/v1/users', userRouter); // in this case /api/v1/users - this is th
 // so if we add a new middleware after all router middleware, it's mean that not any of them where matched
 // all the HTTP methods (get, post.. etc) | * - all urls
 app.all('*', (req, res, next) => {
-  next(new AppError(404, `${req.originalUrl} is not found`));
+  next(new AppError(404, `Rout ${req.originalUrl} is not found`));
 
   // const err = new Error(`${req.originalUrl} is not found`);
   // err.status = 'fail';
