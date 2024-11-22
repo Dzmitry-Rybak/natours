@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const validator = require('validator');
-const User = require('./userModel');
+// const User = require('./userModel');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -105,17 +105,29 @@ const tourSchema = new mongoose.Schema(
         day: Number,
       },
     ],
-    guides: Array,
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User', // create relationship between Tour and User
+      },
+    ],
   },
   {
-    toJSON: { virtuals: true }, // each time data is output with json, we add this
-    toObject: { virtuals: true }, // each time data is output with object, we add this
+    toJSON: { virtuals: true }, // Ensures virtual properties are included when converting a document to JSON.
+    toObject: { virtuals: true }, // Ensures virtual properties are included when converting a document to a plain JavaScript object.
   },
 );
 
 // we will don't save this document (table) durationWeeks, we will only convert the data and send it with response data
 tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
+});
+
+// We connect Tour Model by 'tour' and local '_id' fields
+tourSchema.virtual('reviews', {
+  ref: 'review',
+  foreignField: 'tour', // reference to 'tour' field
+  localField: '_id', // what we reference in this local Model
 });
 
 // pre - middleware before an actual event
@@ -129,13 +141,13 @@ tourSchema.pre('save', function (next) {
 });
 
 // Embedding users with tours
-tourSchema.pre('save', async function (next) {
-  const guidesPromises = this.guides.map(async (id) => await User.findById(id)); // as we don't do .then() we don't await the result of this FindById query
+// tourSchema.pre('save', async function (next) {
+//   const guidesPromises = this.guides.map(async (id) => await User.findById(id)); // as we don't do .then() we don't await the result of this FindById query
 
-  this.guides = await Promise.all(guidesPromises); // so here we'r waiting all this promises
+//   this.guides = await Promise.all(guidesPromises); // so here we'r waiting all this promises
 
-  next();
-});
+//   next();
+// });
 
 tourSchema.pre('save', function (next) {
   // console.log('Will save document...');
@@ -157,6 +169,15 @@ tourSchema.pre(/^find/, function (next) {
 
   this.start = Date.now();
   // console.log(this);
+  next();
+});
+
+tourSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: 'guides', // from which place we get reference
+    select: '-__v -passwordChangedAt', // witch field we filter out
+  });
+
   next();
 });
 

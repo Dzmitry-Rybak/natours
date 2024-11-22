@@ -89,8 +89,8 @@ exports.getAllTours = async (req, res) => {
 
 exports.getTour = async (req, res, next) => {
   try {
-    const tour = await Tour.findById(req.params.id);
-    // Tour.findOne({_id: req.param.id}) the same as findById
+    // in DB we have ids in this guides, and here we populate (add) users (real data by it's id) in this query
+    const tour = await Tour.findById(req.params.id).populate('reviews'); // we will populate with 'reviews' only in this query getTour
 
     res.status(200).json({
       status: 'success',
@@ -99,7 +99,8 @@ exports.getTour = async (req, res, next) => {
       },
     });
   } catch (err) {
-    return next(new AppError(404, 'No user with this ID'));
+    console.log(err);
+    return next(new AppError(404, err.message));
   }
 };
 
