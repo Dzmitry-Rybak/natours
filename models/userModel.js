@@ -21,9 +21,6 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'user', 'guide', 'lead-guide'],
     default: 'user',
   },
-  // active: {
-  //   type: Boolean,
-  // },
   photo: {
     type: String,
   },

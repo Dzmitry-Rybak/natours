@@ -5,10 +5,31 @@ const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 
-const signToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, {
+const filterObj = (obj, ...allowedFields) => {
+  const newObject = {};
+  Object.keys(obj).forEach((item) => {
+    if (allowedFields.includes(item)) {
+      newObject[item] = obj[item];
+    }
+  });
+  return newObject;
+};
+
+const signToken = (id, res) => {
+  const token = jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
+
+  res.cookie('jwt', token, {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
+    ), // 90 d * 24h * 60min * 60sec * 1000 mil - convert to milliseconds
+    // secure: true, // cookie will only be send on encrypted connection (https)
+    httpOnly: true, // cookie can not be access/modified by the Browser
+  });
+
+  return token;
+};
 
 exports.signup = async (req, res) => {
   try {
@@ -24,14 +45,7 @@ exports.signup = async (req, res) => {
     });
 
     // {payload, secret, options - when expire}
-    const token = signToken(newUser._id);
-    res.cookie('jwt', token, {
-      expires: new Date(
-        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
-      ), // 90 d * 24h * 60min * 60sec * 1000 mil - convert to milliseconds
-      // secure: true, // cookie will only be send on encrypted connection (https)
-      httpOnly: true, // cookie can not be access/modified by the Browser
-    });
+    const token = signToken(newUser._id, res);
 
     // remove password from response
     newUser.password = undefined;
@@ -68,9 +82,10 @@ exports.login = async (req, res, next) => {
     if (!user || !correct) {
       return next(new AppError(401, 'Incorrect email or password'));
     }
-
+    console.log(user);
     // 3) if everything ok, send token to client
-    const token = signToken(user._id);
+    const token = signToken(user._id, res);
+
     res.status(200).json({
       status: 'success',
       token,
@@ -86,13 +101,15 @@ exports.login = async (req, res, next) => {
 exports.protect = async (req, res, next) => {
   try {
     // 1) Get token from request
-    let token;
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer')
-    ) {
-      token = req.headers.authorization.split(' ')[1];
-    }
+    // let token;
+    // if (
+    //   req.headers.authorization &&
+    //   req.headers.authorization.startsWith('Bearer')
+    // ) {
+    //   token = req.headers.authorization.split(' ')[1];
+    // }
+
+    const token = req.cookies.jwt;
 
     if (!token) {
       throw new Error('Invalid headers');
@@ -100,11 +117,13 @@ exports.protect = async (req, res, next) => {
     // 2) compare tokens
 
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET); // payload with {id, iat, exp}
+    console.log('decoded', decoded);
+
     // 3) Check if user still exists
     const currentUser = await User.findById(decoded.id);
 
     if (!currentUser) {
-      throw new Error();
+      throw new Error('There no exist user with given ID');
     }
     // 4) Check if user changed password after the token was issued
 
@@ -260,5 +279,49 @@ exports.updatePassword = async (req, res, next) => {
     });
   } catch (error) {
     next(new AppError(401, error.message));
+  }
+};
+
+exports.updateMe = async (req, res, next) => {
+  try {
+    // 1) Create error if user POSTs password data
+    if (req.body.password || req.body.passwordConfirm) {
+      throw new Error(
+        'You can`t change your password here. Please use /updatePassword',
+      );
+    }
+
+    // 2) Filtered out unwanted fields
+    const filteredBody = filterObj(req.body, 'name', 'email');
+
+    // 3) Update user document
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      filteredBody,
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+
+    res.status(200).json({
+      message: 'success',
+      data: updatedUser,
+    });
+  } catch (error) {
+    next(new AppError(400, error.message)); // 400 - Bad Request
+  }
+};
+
+exports.deleteMe = async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user.id, { active: false }); // we can just change this property, not delete user
+
+    res.status(204).json({
+      message: 'success',
+      data: null,
+    });
+  } catch (error) {
+    next(new AppError(400, error.message));
   }
 };

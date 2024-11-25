@@ -8,18 +8,17 @@ router.post('/signup', authController.signup);
 router.post('/login', authController.login);
 router.post('/forgotPassword', authController.forgotPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);
-router.patch(
-  '/updatePassword',
-  authController.protect,
-  authController.updatePassword,
-);
-router.patch('/updateMe', authController.protect, userController.updateMe);
-router.delete('/deleteMe', authController.protect, userController.deleteMe);
 
-router
-  .route('/')
-  .get(userController.getAllUsers)
-  .post(userController.createUser); // '/' saying what we reference to out main route /api/v1/users
+// as middlewares runs in sequence, this middleware here will protect all middleware below with protect middleware
+router.use(authController.protect);
+
+router.patch('/updatePassword', authController.updatePassword);
+router.patch('/updateMe', authController.updateMe);
+router.delete('/deleteMe', authController.deleteMe);
+
+// router.use(authController.restrictTo('admin'));
+
+router.route('/').get(userController.getAllUsers); // '/' saying what we reference to out main route /api/v1/users
 
 router
   .route('/:id')

@@ -10,6 +10,7 @@ const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
 const AppError = require('./utils/appError');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
@@ -17,6 +18,9 @@ const app = express();
 // Set security HTTP headers:
 // We call this helmet inside use() because this function return middleware function
 app.use(helmet()); // protect app from vulnerabilities
+
+// Use cookie-parser middleware
+app.use(cookieParser());
 
 // Development logging:
 if (process.env.NODE_ENV === 'development') {

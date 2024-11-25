@@ -105,6 +105,8 @@ const tourSchema = new mongoose.Schema(
         day: Number,
       },
     ],
+    // One to many
+    // when creating a new Tour, we send userId, and then by this ID Mongo will reference to Ids in User Model
     guides: [
       {
         type: mongoose.Schema.ObjectId,
