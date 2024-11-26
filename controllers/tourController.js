@@ -1,6 +1,6 @@
 const Tour = require('../models/tourModel');
 // const APIFeatures = require('../utils/apiFeatures');
-// const AppError = require('../utils/appError');
+const AppError = require('../utils/appError');
 
 const factory = require('./handlerFactory');
 
@@ -257,5 +257,69 @@ exports.getMonthlyPlan = async (req, res) => {
       status: 'fail',
       message: error,
     });
+  }
+};
+
+// /tours-within/:distance/center/:latlng/unit/:unit
+exports.getToursWithin = async (req, res, next) => {
+  try {
+    const { distance, latlng, unit } = req.params;
+    const [lat, lng] = latlng.split(',');
+
+    // convert distance in radius using Earth radius in mills or km
+    const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
+
+    if (!lat || !lng) {
+      throw new Error('There no latitude and longitude');
+    }
+
+    const tours = await Tour.find({
+      startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      data: {
+        tours,
+      },
+    });
+  } catch (error) {
+    next(new AppError(400, error.message));
+  }
+};
+
+exports.getDistances = async (req, res, next) => {
+  try {
+    const { latlng, unit } = req.params;
+    const [lat, lng] = latlng.split(',');
+
+    const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
+
+    if (!lat || !lng) {
+      throw new Error('There no latitude and longitude');
+    }
+
+    const distances = await Tour.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [+lng, +lat],
+          },
+          distanceField: 'distance',
+          distanceMultiplier: multiplier,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        data: distances,
+      },
+    });
+  } catch (error) {
+    next(new AppError(400, error.message));
   }
 };

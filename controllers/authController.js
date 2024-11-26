@@ -82,7 +82,7 @@ exports.login = async (req, res, next) => {
     if (!user || !correct) {
       return next(new AppError(401, 'Incorrect email or password'));
     }
-    console.log(user);
+
     // 3) if everything ok, send token to client
     const token = signToken(user._id, res);
 
@@ -98,6 +98,18 @@ exports.login = async (req, res, next) => {
   }
 };
 
+exports.logout = (req, res, next) => {
+  try {
+    res.clearCookie('jwt');
+    res.status(201).json({
+      status: 'success',
+      message: 'Log out successfully',
+    });
+  } catch (error) {
+    next(new AppError(400, error.message));
+  }
+};
+
 exports.protect = async (req, res, next) => {
   try {
     // 1) Get token from request
@@ -109,6 +121,7 @@ exports.protect = async (req, res, next) => {
     //   token = req.headers.authorization.split(' ')[1];
     // }
 
+    // 1) Get token from request COOKIES
     const token = req.cookies.jwt;
 
     if (!token) {
@@ -117,7 +130,6 @@ exports.protect = async (req, res, next) => {
     // 2) compare tokens
 
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET); // payload with {id, iat, exp}
-    console.log('decoded', decoded);
 
     // 3) Check if user still exists
     const currentUser = await User.findById(decoded.id);
@@ -135,7 +147,6 @@ exports.protect = async (req, res, next) => {
     req.user = currentUser;
     next();
   } catch (error) {
-    console.log(error);
     return next(new AppError(401, error.message));
   }
 };

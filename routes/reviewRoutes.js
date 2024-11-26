@@ -5,11 +5,12 @@ const authController = require('../controllers/authController');
 
 const router = express.Router({ mergeParams: true }); // if some routes that reference to this rout have any params, this router will also have them, because of this mergeParams: true option
 
+router.use(authController.protect);
+
 router
   .route('/')
   .get(reviewController.getAllReviews)
   .post(
-    authController.protect,
     authController.restrictTo('user'),
     reviewController.setAvailableBody,
     reviewController.createReview,

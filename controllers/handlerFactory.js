@@ -40,7 +40,7 @@ exports.getAll = (model) => {
         .pagination();
 
       // explain method - is used to get detailed inform about how MongoDB execute a query
-      const document = await features.query.explain();
+      const document = await features.query;
 
       res.status(200).json({
         status: 'success',

@@ -6,13 +6,9 @@ exports.setAvailableBody = (req, res, next) => {
   if (!req.user.id || !req.params.tourId) {
     next(new AppError(400, 'Invalid tour or user id'));
   }
+  req.body.tour = req.params.tourId;
+  req.body.user = req.user.id; // Bind user's ID. Then Review model will get this ID and parse it into User Data from DB
 
-  res.body = {
-    review: req.body.review,
-    rating: req.body.rating,
-    user: req.user.id, // Bind user's ID. Then Review model will get this ID and parse it into User Data from DB
-    tour: req.params.tourId,
-  };
   next();
 };
 

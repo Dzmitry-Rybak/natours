@@ -1,7 +1,7 @@
 const express = require('express');
 const tourControllers = require('../controllers/tourController');
 const authController = require('../controllers/authController');
-const reviewRouter = require('../routes/reviewRoutes');
+const reviewRouter = require('./reviewRoutes');
 
 const router = express.Router();
 
@@ -19,6 +19,13 @@ router
     authController.restrictTo('admin', 'lead-guide', 'guide'),
     tourControllers.getMonthlyPlan,
   );
+
+// distance, latlng - from witch location, unit - km or milles?
+router
+  .route('/tours-within/:distance/center/:latlng/unit/:unit')
+  .get(tourControllers.getToursWithin);
+
+router.route('/distances/:latlng/unit/:unit').get(tourControllers.getDistances);
 
 router
   .route('/') // '/' saying what we reference to out main route /api/v1/tours
