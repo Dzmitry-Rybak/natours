@@ -1,8 +1,76 @@
 const Tour = require('../models/tourModel');
 // const APIFeatures = require('../utils/apiFeatures');
+const multer = require('multer');
+const sharp = require('sharp'); // allows to do something with images
 const AppError = require('../utils/appError');
 
 const factory = require('./handlerFactory');
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError(400, 'Not an image!'), false);
+  }
+};
+
+// const upload = multer({ dest: 'public/img/users' }); // place, where save this file | if we not add any options, uploaded img will not saved in memory
+
+const upload = multer({
+  storage: multerStorage, // it will put the file data into req.file
+  fileFilter: multerFilter, // filter setting the we used when uploading
+});
+
+// If we have a lot of field in input, where user will upload many fils - we use .fields
+exports.uploadTourImages = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]);
+
+// If we'a waiting for only 1 single file from one field - we use .single
+// upload.single('image') - req.file
+
+// If we want many files from one field - we use .array
+// upload.array('images', 5) - req.files
+
+exports.resizeTourImages = async (req, res, next) => {
+  // if there no imageCover OR images -> next()
+  if (!req.files.imageCover || !req.files.images) return next();
+
+  // 1) Cover image
+  // as we want to be available to update images in UpdateOne, we need to add this name in req.body:
+  req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+  await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`public/img/tours/${req.body.imageCover}`);
+
+  // 2) Images
+  req.body.images = [];
+
+  // 1 - as our sharp - async function, we need to await it
+  // 2 - as it's await - it's return promise
+  // 3 - as it's return promise, we should wait until it's resolve, so we get all of this promises and awaiting all off them
+  const promises = req.files.images.map(async (file, index) => {
+    const filename = `tour-${req.params.id}-${Date.now()}-${index + 1}.jpeg`;
+
+    await sharp(file.buffer)
+      .resize(2000, 1333)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      .toFile(`public/img/tours/${req.body.imageCover}`);
+
+    req.body.images.push(filename);
+  });
+
+  //
+  await Promise.all(promises);
+
+  next();
+};
 
 exports.aliasTopTours = async (req, res, next) => {
   req.query.limit = '5';

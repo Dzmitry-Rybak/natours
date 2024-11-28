@@ -295,6 +295,7 @@ exports.updatePassword = async (req, res, next) => {
 
 exports.updateMe = async (req, res, next) => {
   try {
+    console.log(req.file);
     // 1) Create error if user POSTs password data
     if (req.body.password || req.body.passwordConfirm) {
       throw new Error(
@@ -304,6 +305,7 @@ exports.updateMe = async (req, res, next) => {
 
     // 2) Filtered out unwanted fields
     const filteredBody = filterObj(req.body, 'name', 'email');
+    if (req.file) filteredBody.photo = req.file.filename; // allow updating 'photo' field in DataBase
 
     // 3) Update user document
     const updatedUser = await User.findByIdAndUpdate(

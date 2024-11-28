@@ -7,6 +7,7 @@ const xss = require('xss-clean');
 const hpp = require('hpp');
 const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
 const AppError = require('./utils/appError');
@@ -78,6 +79,7 @@ app.use((req, res, next) => {
 app.use('/api/v1/tours', tourRouter); // in this case /api/v1/tours - this is the main route equal ('/')
 app.use('/api/v1/users', userRouter); // in this case /api/v1/users - this is the main route equal ('/')
 app.use('/api/v1/review', reviewRouter);
+app.use('/api/v1/booking', bookingRouter);
 
 // all the middleware are executed in the order they are in the code.
 // so if we add a new middleware after all router middleware, it's mean that not any of them where matched

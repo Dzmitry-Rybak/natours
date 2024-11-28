@@ -38,7 +38,13 @@ router
 router
   .route('/:id') // '/:id' saying what we reference to out main route /api/v1/tours/:id
   .get(tourControllers.getTour)
-  .patch(tourControllers.updateTour)
+  .patch(
+    authController.protect,
+    authController.restrictTo('admin', 'lead-guide'),
+    tourControllers.uploadTourImages,
+    tourControllers.resizeTourImages,
+    tourControllers.updateTour,
+  )
   .delete(
     authController.protect,
     authController.restrictTo('admin', 'lead-guide'),

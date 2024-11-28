@@ -13,7 +13,13 @@ router.patch('/resetPassword/:token', authController.resetPassword);
 router.use(authController.protect);
 
 router.patch('/updatePassword', authController.updatePassword);
-router.patch('/updateMe', authController.updateMe);
+// photo - name of the field in the form, that uploading
+router.patch(
+  '/updateMe',
+  userController.uploadUserPhoto,
+  userController.resizeUserPhoto,
+  authController.updateMe,
+);
 router.delete('/deleteMe', authController.deleteMe);
 router.get('/logout', authController.logout);
 
